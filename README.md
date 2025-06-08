@@ -47,7 +47,10 @@ SlackReader/
 2. **Place Slack Export Logs**
    - Put your exported Slack log folders (JSON files) in the `logs/` directory.
 
-3. **Process Logs and Media**
+3. **Slack OAuth Token**
+    - Place the user oauth token with file:read access in download-media.js
+
+4. **Process Logs and Media**
    - Run:
      ```sh
      node process-all-logs.js
@@ -58,7 +61,7 @@ SlackReader/
      - Rewrite logs to point to local media.
      - Output processed logs to `converted-logs/`.
 
-4. **View in Web App**
+5. **View in Web App**
    - Start the web app (from `web/`):
      ```sh
      cd web
