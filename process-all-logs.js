@@ -77,6 +77,4 @@ process.on('SIGTERM', shutdown);
 // Print initial progress
 printProgress();
 
-for (let i = 0; i < MAX_PARALLEL; i++) next();
-
-console.log(glob.sync('E:/Projects/SlackReader/logs/*.json')); 
+for (let i = 0; i < MAX_PARALLEL; i++) next(); 

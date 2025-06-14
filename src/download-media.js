@@ -1,4 +1,3 @@
-const fetch = require('node-fetch');
 const fs = require('fs');
 const path = require('path');
 const mkdirp = require('mkdirp');
@@ -17,7 +16,12 @@ const MEDIA_DIR = path.isAbsolute(outDir) ? outDir : path.join(PROJECT_ROOT, out
 console.log('Media output directory:', MEDIA_DIR);
 
 // ---- CONFIG ----
-const SLACK_TOKEN = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+const SLACK_TOKEN = process.env.SLACK_TOKEN || '';
+if (!SLACK_TOKEN) {
+  console.error('ERROR: SLACK_TOKEN environment variable is not set!');
+  console.error('Please set your Slack token: export SLACK_TOKEN="your-token-here"');
+  process.exit(1);
+}
 const LOGS_DIR = path.join(PROJECT_ROOT, 'logs');
 
 async function downloadFile(url, dest, token) {
@@ -26,12 +30,15 @@ async function downloadFile(url, dest, token) {
   });
   if (!res.ok) throw new Error(`Failed to download ${url}: ${res.status}`);
   await mkdirp.mkdirp(path.dirname(dest));
+  
+  // Use Node.js streams for native fetch compatibility
+  const { Readable } = require('stream');
+  const { pipeline } = require('stream/promises');
+  
+  const nodeStream = Readable.fromWeb(res.body);
   const fileStream = fs.createWriteStream(dest);
-  await new Promise((resolve, reject) => {
-    res.body.pipe(fileStream);
-    res.body.on('error', reject);
-    fileStream.on('finish', resolve);
-  });
+  
+  await pipeline(nodeStream, fileStream);
 }
 
 function getAllLogFiles() {
@@ -70,8 +77,8 @@ function extractFileUrlsFromLog(logPath) {
 const logArg = getArg('--log');
 let logFiles;
 if (logArg) {
-  // Support both absolute and relative paths
-  const logPath = path.isAbsolute(logArg) ? logArg : path.join(LOGS_DIR, logArg);
+  // Use the path as-is if absolute, or resolve relative to PROJECT_ROOT
+  const logPath = path.isAbsolute(logArg) ? logArg : path.resolve(PROJECT_ROOT, logArg);
   logFiles = [logPath];
   console.log('Processing single log file:', logPath);
 } else {

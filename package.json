@@ -1,0 +1,25 @@
+{
+  "name": "workspace",
+  "version": "1.0.0",
+  "description": "A robust, cross-platform tool and web app for archiving and viewing exported Slack logs with local media support, channel switching, and a beautiful interface.",
+  "main": "process-all-logs.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mpeddicord/SlackReader.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mpeddicord/SlackReader/issues"
+  },
+  "homepage": "https://github.com/mpeddicord/SlackReader#readme",
+  "dependencies": {
+    "glob": "^11.0.3",
+    "mkdirp": "^3.0.1",
+    "node-fetch": "^3.3.2"
+  }
+}
