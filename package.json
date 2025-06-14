@@ -1,0 +1,12 @@
+{
+  "name": "slackreader",
+  "version": "1.0.0",
+  "description": "Slack log processing tool",
+  "main": "process-all-logs.js",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-fetch": "^2.7.0",
+    "glob": "^10.3.10",
+    "mkdirp": "^3.0.1"
+  }
+} 

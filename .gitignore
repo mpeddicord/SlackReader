@@ -1,0 +1,10 @@
+
+converted-logs/
+
+logs/
+
+web/public/media/
+
+.env
+
+node_modules/

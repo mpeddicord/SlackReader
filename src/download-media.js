@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const mkdirp = require('mkdirp');
 const glob = require('glob');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 // Simple CLI arg parsing
@@ -98,50 +99,84 @@ async function main() {
       }
     }
   }
-  console.log(`Found ${allFiles.size} unique files to download.`);
+  
   const CONCURRENCY = 10;
   const downloadQueue = Array.from(allFiles.entries());
   let count = 0;
   let index = 0;
+  let alreadyDownloaded = 0;
+  let skipped = 0;
+  let failed = 0;
+  let downloaded = 0;
+
+  // Progress bar function
+  function updateProgress() {
+    const total = allFiles.size;
+    const progress = count / total * 100;
+    const barLength = 20;  // Shorter bar for inline display
+    const filled = Math.floor(progress / 100 * barLength);
+    const bar = '█'.repeat(filled) + '░'.repeat(barLength - filled);
+    process.stdout.write(`\r[${bar}] ${progress.toFixed(1)}% (${count}/${total})`);
+  }
 
   async function next() {
     if (index >= downloadQueue.length) return;
     const [url, fileObj] = downloadQueue[index++];
     const { name, id, ext } = fileObj;
     if (!id) return next();
+    
     // Skip non-Slack URLs
     if (
       !url.startsWith('https://files.slack.com/') &&
       !url.startsWith('https://slack-files.com/')
     ) {
-      console.log(`Skipping non-Slack URL: ${url}`);
+      skipped++;
+      count++;
+      updateProgress();
       return next();
     }
+
     const safeExt = ext.replace(/[^a-zA-Z0-9.]/g, '') || '.bin';
     const safeName = (name || '').replace(/[^a-zA-Z0-9._-]/g, '_') || 'file';
     const localName = `${safeName}__${id}${safeExt}`;
     const dest = path.join(MEDIA_DIR, localName);
+    
     if (fs.existsSync(dest)) {
-      console.log(`[${++count}/${allFiles.size}] Already downloaded: ${localName}`);
+      alreadyDownloaded++;
+      count++;
+      updateProgress();
       return next();
     }
+
     try {
-      console.log(`[${++count}/${allFiles.size}] Downloading: ${localName}`);
       await downloadFile(url, dest, SLACK_TOKEN);
+      downloaded++;
     } catch (e) {
-      console.error(`Failed to download ${url}: ${e}`);
+      console.error(`\nFailed to download ${url}: ${e}`);
+      failed++;
     }
+    count++;
+    updateProgress();
     return next();
   }
 
-  const promises = [];
-  for (let i = 0; i < CONCURRENCY; i++) {
-    promises.push(next());
+  if (allFiles.size > 0) {
+    console.log(`Processing ${allFiles.size} files...`);
+    const promises = [];
+    for (let i = 0; i < CONCURRENCY; i++) {
+      promises.push(next());
+    }
+    await Promise.all(promises);
+    console.log('\n');
   }
-  await Promise.all(promises);
+  
   // Write out the mapping for later use
   await mkdirp.mkdirp(MEDIA_DIR);
   fs.writeFileSync(path.join(MEDIA_DIR, 'media-map.json'), JSON.stringify(idToLocal, null, 2));
+  
+  // Print final summary in a single line
+  const summary = `Download Summary: ${allFiles.size} total, ${alreadyDownloaded} existing, ${downloaded} new, ${skipped} skipped, ${failed} failed`;
+  console.log(summary);
   console.log('Done!');
 }
 
